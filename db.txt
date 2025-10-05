@@ -1,0 +1,11 @@
+CREATE DATABASE news_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE news (
+    id INT AUTO_INCREMENT PRIMARY KEY,              
+    company VARCHAR(255),                          
+    title VARCHAR(500),                          
+    url VARCHAR(500) UNIQUE,                       
+    description TEXT,                            
+    published_at DATETIME,                         
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
