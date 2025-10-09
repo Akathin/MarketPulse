@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+apscheduler
+sqlalchemy
+pymysql
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+python-dotenv
