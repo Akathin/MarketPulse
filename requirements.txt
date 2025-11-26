@@ -4,3 +4,6 @@ requests
 apscheduler
 sqlalchemy
 pymysql
+python-dotenv
+python-dateutil
+newspaper3k
