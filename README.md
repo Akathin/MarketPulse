@@ -16,11 +16,11 @@
 
 ---
 
-## 📦 설치 방법
-
-1. GitHub 저장소 클론
+## 📦 적용 방법
 
 ```bash
+1. GitHub 저장소 클론
+
 git clone https://github.com/yourusername/MarketPulse.git
 cd MarketPulse
 
