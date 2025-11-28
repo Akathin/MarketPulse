@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-# market_pulse
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
 # MarketPulse - 해외 기업 뉴스 크롤링 & 감정 분석
 
 이 프로젝트는 FastAPI와 NewsAPI를 이용해 해외 기업 뉴스를 주기적으로 수집하고, MySQL에 저장하는 뉴스 크롤링 서버입니다. 또한 기사 본문을 추출해 별도의 감정 분석(sentiment analysis)에 활용할 수 있습니다.
@@ -73,4 +55,3 @@ DB_NAME = "news_db"
 7. server.py 실행
 
 uvicorn server:app
->>>>>>> 7738bbb914893151230f184ed14d401df06655c9
