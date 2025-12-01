@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from dateutil import parser
 from fastapi import FastAPI
+from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, select
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -32,8 +33,15 @@ class News(Base):
     description = Column(String)
     content = Column(String)
     sentiment = Column(String)
-    published_at = Column(String)
+    published_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True)
+    company = Column(String, index=True)
 
 
 Base.metadata.create_all(bind=engine)
@@ -46,8 +54,13 @@ app = FastAPI()
 load_dotenv()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
-# 해외 기업 리스트 (임시)
+# 해외 기업 리스트 (폴백)
 COMPANIES = ["Apple", "Tesla", "Amazon", "Google", "Microsoft", "NVIDIA", "Meta"]
+
+
+class SubscriptionRequest(BaseModel):
+    user_id: str
+    company: str
 
 #기사 본문 추출 함수
 def extract_full_text(url: str) -> str:
@@ -108,8 +121,23 @@ def fetch_news(company):
 # ----------------------
 # 스케줄러 (15분마다 모든 기업 뉴스 갱신)
 # ----------------------
+def get_subscribed_companies():
+    db = SessionLocal()
+    try:
+        stmt = select(Subscription.company).distinct()
+        rows = db.execute(stmt).scalars().all()
+        return rows
+    finally:
+        db.close()
+
+
 def update_all_news():
-    for company in COMPANIES:
+    companies = get_subscribed_companies()
+    # 폴백: 구독이 없으면 기존 하드코딩된 기업 리스트를 사용
+    if not companies:
+        companies = COMPANIES
+
+    for company in companies:
         fetch_news(company)
 
 
@@ -129,16 +157,73 @@ def get_news(company: str = None):
         query = select(News).order_by(News.id.desc())
     news_list = db.execute(query).scalars().all()
     db.close()
+    def _format(dt):
+        try:
+            return dt.isoformat() if dt else None
+        except Exception:
+            return str(dt)
+
     return [
         {
             "company": n.company,
             "title": n.title,
             "url": n.url,
             "description": n.description,
-            "publishedAt": n.published_at,
+            "publishedAt": _format(n.published_at),
         }
         for n in news_list
     ]
+
+
+@app.post("/subscribe")
+def subscribe(req: SubscriptionRequest):
+    """사용자가 특정 기업을 구독하도록 추가"""
+    db = SessionLocal()
+    try:
+        exists = db.execute(select(Subscription).where(Subscription.user_id == req.user_id, Subscription.company == req.company)).first()
+        if exists:
+            return {"status": "exists", "message": "이미 구독중입니다."}
+
+        sub = Subscription(user_id=req.user_id, company=req.company)
+        db.add(sub)
+        db.commit()
+        return {"status": "ok", "message": f"{req.company} 구독 추가됨"}
+    finally:
+        db.close()
+
+
+@app.post("/unsubscribe")
+def unsubscribe(req: SubscriptionRequest):
+    """사용자 구독 해제"""
+    db = SessionLocal()
+    try:
+        stmt = select(Subscription).where(Subscription.user_id == req.user_id, Subscription.company == req.company)
+        row = db.execute(stmt).scalars().first()
+        if not row:
+            return {"status": "not_found", "message": "구독 항목이 없습니다."}
+
+        db.delete(row)
+        db.commit()
+        return {"status": "ok", "message": f"{req.company} 구독 해제됨"}
+    finally:
+        db.close()
+
+
+@app.get("/subscriptions")
+def list_subscriptions(user_id: str = None):
+    """특정 사용자 또는 전체 구독 목록 반환"""
+    db = SessionLocal()
+    try:
+        if user_id:
+            stmt = select(Subscription).where(Subscription.user_id == user_id)
+            rows = db.execute(stmt).scalars().all()
+            return [{"company": r.company, "user_id": r.user_id} for r in rows]
+        else:
+            stmt = select(Subscription)
+            rows = db.execute(stmt).scalars().all()
+            return [{"company": r.company, "user_id": r.user_id} for r in rows]
+    finally:
+        db.close()
 @app.on_event("startup")
 def startup_event():
     update_all_news()  # 서버 시작 시 한 번 뉴스 갱신

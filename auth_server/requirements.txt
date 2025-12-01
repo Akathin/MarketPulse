@@ -4,9 +4,7 @@ requests
 apscheduler
 sqlalchemy
 pymysql
-python-dotenv
-python-dateutil
-newspaper3k
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+python-dotenv
