@@ -40,11 +40,10 @@ pip install -r requirements.txt
 
 ```powershell
 copy .env.example .env
-# 편집: .env 에 NEWS_API_KEY, DB_USER/DB_PASS/DB_HOST/DB_NAME 채우기
-# (요약을 사용하려면 OPENAI_API_KEY도 설정)
+# 편집: .env 에 NEWS_API_KEY, OPENAI_API_KEY 채우기
 ```
 
-5. MySQL 데이터베이스 준비
+5. MySQL 데이터베이스 준비(db.txt 복사)
 
 ```sql
 CREATE DATABASE news_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
