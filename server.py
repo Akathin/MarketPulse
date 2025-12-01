@@ -4,7 +4,9 @@ from dateutil import parser
 from fastapi import FastAPI
 from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, select
+import openai
+import time
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, select, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 import requests
 import datetime
@@ -34,6 +36,7 @@ class News(Base):
     content = Column(String)
     sentiment = Column(String)
     published_at = Column(DateTime)
+    summary_ko = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
@@ -53,6 +56,9 @@ app = FastAPI()
 
 load_dotenv()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if OPENAI_API_KEY:
+    openai.api_key = OPENAI_API_KEY
 
 # 해외 기업 리스트 (폴백)
 COMPANIES = ["Apple", "Tesla", "Amazon", "Google", "Microsoft", "NVIDIA", "Meta"]
@@ -71,6 +77,74 @@ def extract_full_text(url: str) -> str:
         return article.text
     except Exception:
         return None
+
+
+def summarize_article(text: str) -> str:
+    """Summarize English article text into detailed Korean summary using OpenAI.
+    Returns None if no API key or if summarization fails.
+    """
+    if not text:
+        return None
+    if not OPENAI_API_KEY:
+        return None
+
+    # simple chunking by characters; tune chunk_size for your model/token limits
+    chunk_size = 3000
+    parts = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+    summaries = []
+    system_prompt = "당신은 영어 뉴스 기사를 한국어로 요약하는 전문가입니다. 자세하게 핵심만 요약하세요."
+
+    for part in parts:
+        user_prompt = (
+            "다음 영어 본문을 읽고 한국어로 자세히 요약하세요. 핵심 포인트를 마지막에 3개로 정리하세요.\n\n" + part
+        )
+        for attempt in range(3):
+            try:
+                resp = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    max_tokens=800,
+                    temperature=0.2,
+                )
+                chunk_summary = resp["choices"][0]["message"]["content"].strip()
+                summaries.append(chunk_summary)
+                break
+            except Exception:
+                time.sleep(2 ** attempt)
+                continue
+
+    if not summaries:
+        return None
+
+    if len(summaries) == 1:
+        return summaries[0]
+
+    combined = "\n\n".join(summaries)
+    synth_prompt = (
+        "여러 개의 부분 요약을 하나의 일관된 한국어 요약으로 합치고, 불필요한 중복을 제거하세요. 마지막에 핵심 키포인트 3개를 번호로 정리하세요.\n\n" + combined
+    )
+
+    for attempt in range(3):
+        try:
+            resp = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": synth_prompt},
+                ],
+                max_tokens=1000,
+                temperature=0.2,
+            )
+            final_summary = resp["choices"][0]["message"]["content"].strip()
+            return final_summary
+        except Exception:
+            time.sleep(2 ** attempt)
+            continue
+
+    return "\n\n".join(summaries)
 
 # ----------------------
 # 뉴스 크롤링 함수 (NewsAPI)
@@ -103,6 +177,13 @@ def fetch_news(company):
         # publishedAt 파싱
         published_at = parser.isoparse(item["publishedAt"]).replace(tzinfo=None)
 
+        # 한국어 요약 (OpenAI 기반) - 환경변수 없으면 건너뜀
+        summary_ko = None
+        try:
+            summary_ko = summarize_article(full_text) if full_text else None
+        except Exception:
+            summary_ko = None
+
         news = News(
             company=company,
             title=item["title"],
@@ -111,6 +192,7 @@ def fetch_news(company):
             content=full_text,
             sentiment=sentiment_result,   # 추가
             published_at=published_at,
+            summary_ko=summary_ko,
         )
         db.add(news)
 
