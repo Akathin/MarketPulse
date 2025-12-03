@@ -1,5 +1,5 @@
-from passlib.context import CryptContext
-from jose import JWTError, jwt
+import hashlib
+from jose import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -8,17 +8,20 @@ SECRET_KEY = "your-secret-key-here-change-in-production"  # 실제 운영환경�
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _hash_password_sha256(password: str) -> str:
+    """SHA-256으로 비밀번호 해싱 (학습/개발용 – 실제 서비스에는 적합하지 않음)."""
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """비밀번호 검증"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return _hash_password_sha256(plain_password) == hashed_password
 
 
 def get_password_hash(password: str) -> str:
     """비밀번호 해싱"""
-    return pwd_context.hash(password)
+    return _hash_password_sha256(password)
 
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
@@ -29,5 +32,4 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
         expire = datetime.utcnow() + timedelta(minutes=15)
 
     to_encode = {"exp": expire, "sub": subject}
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

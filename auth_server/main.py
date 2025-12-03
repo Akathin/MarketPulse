@@ -9,17 +9,21 @@ from datetime import timedelta, datetime
 from jose import JWTError, jwt
 from typing import Dict
 
-from models import Base, User
-from schemas import (
+from auth_server.models import Base, User
+from auth_server.schemas import (
     Token, TokenData, UserCreate, UserIdCheck,
-    FindUserId, VerifyResetUserRequest, ResetPasswordOnlyRequest
+    ResetPasswordOnlyRequest,
 )
-from security import (
+from auth_server.security import (
     verify_password, get_password_hash, create_access_token,
     SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
 load_dotenv()
+
+from auth_server.models import Base, User
+
+print("DEBUG User columns =>", User.__table__.columns) #debug line
 
 # ----------------------
 # MySQL 세팅
@@ -164,26 +168,19 @@ def read_root():
 @app.post("/api/auth/register", response_model=Token, tags=["Authentication"])
 async def register(user_create: UserCreate, db: Session = Depends(get_db)):
     """회원가입"""
+
+    # user_id 중복 체크
     if db.query(User).filter(User.user_id == user_create.user_id).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 등록된 사용자 ID입니다"
+            detail="이미 등록된 사용자 ID입니다",
         )
 
-    if db.query(User).filter(User.phone_number == user_create.phone_number).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 등록된 전화번호입니다"
-        )
-
+    # 비밀번호 해시 후 저장
     hashed_password = get_password_hash(user_create.password)
-
     db_user = User(
         user_id=user_create.user_id,
-        username=user_create.username,
         user_pw=hashed_password,
-        phone_number=user_create.phone_number,
-        age_group=user_create.age_group
     )
 
     db.add(db_user)
@@ -193,10 +190,12 @@ async def register(user_create: UserCreate, db: Session = Depends(get_db)):
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         subject=db_user.user_id,
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
 
 
 @app.post("/api/auth/login", response_model=Token, tags=["Authentication"])
@@ -275,67 +274,8 @@ async def check_user_id(user_id_check: UserIdCheck, db: Session = Depends(get_db
     return {"available": True, "message": "사용 가능한 사용자 ID입니다."}
 
 
-@app.post("/api/auth/find-userid", tags=["Authentication"])
-async def find_user_id(find_data: FindUserId, db: Session = Depends(get_db)):
-    """사용자명과 전화번호로 아이디 찾기"""
-    db_user = db.query(User).filter(
-        User.username == find_data.username,
-        User.phone_number == find_data.phone_number
-    ).first()
-
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="입력한 사용자명과 전화번호가 일치하는 계정을 찾을 수 없습니다."
-        )
-
-    return {
-        "status": "success",
-        "message": "사용자 ID를 찾았습니다.",
-        "user_id": db_user.user_id
-    }
 
 
-@app.post("/api/auth/verify-reset-user", tags=["Authentication"])
-async def verify_reset_user(verify_data: VerifyResetUserRequest, db: Session = Depends(get_db)):
-    """비밀번호 재설정을 위한 사용자 확인"""
-    user = db.query(User).filter(
-        User.user_id == verify_data.user_id,
-        User.phone_number == verify_data.phone_number
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="입력한 사용자 ID와 전화번호가 일치하는 계정을 찾을 수 없습니다."
-        )
-
-    return {
-        "status": "verified",
-        "message": "사용자 정보가 확인되었습니다."
-    }
-
-
-@app.post("/api/auth/reset-password", tags=["Authentication"])
-async def reset_password(reset_data: ResetPasswordOnlyRequest, db: Session = Depends(get_db)):
-    """비밀번호 재설정"""
-    user = db.query(User).filter(User.user_id == reset_data.user_id).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 사용자 계정을 찾을 수 없습니다."
-        )
-
-    hashed_password = get_password_hash(reset_data.new_password)
-    user.user_pw = hashed_password
-
-    db.commit()
-
-    return {
-        "status": "success",
-        "message": "비밀번호가 성공적으로 재설정되었습니다."
-    }
 
 
 if __name__ == "__main__":

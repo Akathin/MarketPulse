@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import 'login_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -24,6 +25,27 @@ class HomePage extends StatelessWidget {
               const SizedBox(width: 4),
               const Text("내정보",
                   style: TextStyle(fontSize: 14, color: Colors.black87)),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                },
+                child: Icon(Icons.logout, color: Colors.grey[800]),
+              ),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                },
+                child: const Text("로그아웃",
+                    style: TextStyle(fontSize: 14, color: Colors.black87)),
+              ),
               const SizedBox(width: 12),
             ],
           )

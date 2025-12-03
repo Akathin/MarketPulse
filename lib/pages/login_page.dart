@@ -131,13 +131,13 @@ class _LoginInputSectionState extends State<_LoginInputSection> {
         children: [
           TextField(
             controller: idController,
-            decoration: AppStyles.input('아이디를 입력하세요'),  // ✅ 수정됨
+            decoration: AppStyles.input('아이디를 입력하세요'),  
           ),
           const SizedBox(height: 12),
           TextField(
             controller: pwController,
             obscureText: true,
-            decoration: AppStyles.input('비밀번호를 입력하세요'), // ✅ 수정됨
+            decoration: AppStyles.input('비밀번호를 입력하세요'),
           ),
           const SizedBox(height: 10),
 
@@ -193,7 +193,12 @@ class _LoginOptionsRow extends StatelessWidget {
     return Column(
       children: [
         TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HomePage()),
+              );
+            },
             child: const Text('로그인 없이 둘러보기')),
         TextButton(
             onPressed: () {

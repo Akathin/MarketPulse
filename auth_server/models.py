@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import declarative_base
 import datetime
-from database import Base
+
+Base = declarative_base()
 
 
 class User(Base):
@@ -8,9 +10,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(50), unique=True, index=True, nullable=False)
-    username = Column(String(50), nullable=False)
     user_pw = Column(String(255), nullable=False)
-    phone_number = Column(String(15), unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
