@@ -35,7 +35,12 @@ class SettingsPage extends StatelessWidget {
                 icon: Icons.person,
                 title: "회원 정보 수정",
                 subtitle: "프로필 수정 관리",
-                onTap: () {},
+                onTap: () {
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                  // );
+                },
               ),
               _settingCard(
                 icon: Icons.color_lens,
@@ -158,67 +163,41 @@ class SettingsPage extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade300),
       ),
-
-      // 카드 자체는 클릭 불가 (중요!)
-      child: Row(
-        children: [
-          // 아이콘 + 텍스트 + 화살표 전체를 버튼처럼 묶음
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque, // 내용 부분만 클릭됨
-              onTap: onTap,
-              child: Row(
-                children: [
-                  Icon(icon, size: 30, color: Colors.purple),
-                  const SizedBox(width: 16),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: Colors.purple),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(subtitle,
+                          style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                    ],
                   ),
-
-                  const Icon(Icons.arrow_forward_ios,
-                      size: 18, color: Colors.grey),
-                ],
-              ),
+                ),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 18, color: Colors.grey),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
