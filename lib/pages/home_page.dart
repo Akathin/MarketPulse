@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import 'login_page.dart';
 import 'notification_page.dart';
-import 'my_page.dart';
 import 'community_page.dart';
 import 'calendar_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     _NewsListPage(),
     const CommunityPage(),
     const CalendarPage(),
-    const Center(child: Text("설정", style: TextStyle(fontSize: 20))),
+    const SettingsPage(isSubscribed: false, username: 'username')
   ];
 
   @override
@@ -47,25 +47,6 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.notifications_none, color: Colors.grey[800]),
                     const SizedBox(width: 4),
                     const Text("알림",
-                        style: TextStyle(fontSize: 14, color: Colors.black87)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // 내정보
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyPage()),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Icon(Icons.person_outline, color: Colors.grey[800]),
-                    const SizedBox(width: 4),
-                    const Text("내정보",
                         style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ],
                 ),
@@ -99,6 +80,11 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _selectedIndex,
         selectedItemColor: AppStyles.primary,
         unselectedItemColor: Colors.grey,
+
+        type: BottomNavigationBarType.fixed,
+
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
         onTap: (index) {
           setState(() {
             _selectedIndex = index;

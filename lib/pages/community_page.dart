@@ -175,8 +175,8 @@ class _CommunityPageState extends State<CommunityPage> {
   Widget _postCard({
     required String title,
     required String content,
-    required int views,
-    required int comments,
+    required int? views,
+    required int? comments,
     required String time,
   }) {
     return GestureDetector(
