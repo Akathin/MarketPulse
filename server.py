@@ -29,12 +29,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class News(Base):
     __tablename__ = "news"
     id = Column(Integer, primary_key=True, index=True)
-    company = Column(String, index=True)
-    title = Column(String)
-    url = Column(String, unique=True, index=True)
-    description = Column(String)
-    content = Column(String)
-    sentiment = Column(String)
+    company = Column(String(100), index=True)      # 길이 지정
+    title = Column(String(500))                    # 뉴스 제목은 최대 500
+    url = Column(String(500), unique=True, index=True)
+    description = Column(String(1000))             # 설명은 최대 1000
+    content = Column(Text)                         # 본문은 길어서 Text로 변경
+    sentiment = Column(String(50))                 # 감정 분석 결과는 짧음
     published_at = Column(DateTime)
     summary_ko = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -43,8 +43,8 @@ class News(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True)
-    company = Column(String, index=True)
+    user_id = Column(String(100), index=True)
+    company = Column(String(100), index=True)
 
 
 Base.metadata.create_all(bind=engine)

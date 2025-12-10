@@ -9,19 +9,19 @@ from datetime import timedelta, datetime
 from jose import JWTError, jwt
 from typing import Dict
 
-from auth_server.models import Base, User
-from auth_server.schemas import (
+from models import Base, User
+from schemas import (
     Token, TokenData, UserCreate, UserIdCheck,
     ResetPasswordOnlyRequest,
 )
-from auth_server.security import (
+from security import (
     verify_password, get_password_hash, create_access_token,
     SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
 load_dotenv()
 
-from auth_server.models import Base, User
+from models import Base, User
 
 print("DEBUG User columns =>", User.__table__.columns) #debug line
 

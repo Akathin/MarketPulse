@@ -156,28 +156,28 @@ class _LoginInputSectionState extends State<_LoginInputSection> {
           ),
           const SizedBox(height: 6),
 
-          // ElevatedButton(
-          //   onPressed: _handleLogin,
-          //   style: ElevatedButton.styleFrom(
-          //     backgroundColor: AppStyles.primary,
-          //     foregroundColor: Colors.white,
-          //     padding: const EdgeInsets.symmetric(vertical: 14),
-          //     shape: RoundedRectangleBorder(
-          //       borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-          //     ),
-          //   ),
-          //   child: const Text('로그인', style: TextStyle(fontSize: 16)),
-          // ),
           ElevatedButton(
-            onPressed: () {
-              // 🔥 서버 없이 바로 홈 화면으로 이동 (테스트용)
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomePage()),
-              );
-            },
-            child: const Text('로그인'),
+            onPressed: _handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppStyles.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+              ),
+            ),
+            child: const Text('로그인', style: TextStyle(fontSize: 16)),
           ),
+          // ElevatedButton(
+          //   onPressed: () {
+          //     // 🔥 서버 없이 바로 홈 화면으로 이동 (테스트용)
+          //     Navigator.pushReplacement(
+          //       context,
+          //       MaterialPageRoute(builder: (_) => const HomePage()),
+          //     );
+          //   },
+          //   child: const Text('로그인'),
+          // ),
         ],
       ),
     );

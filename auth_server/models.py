@@ -21,6 +21,6 @@ class News(Base):
     company = Column(String(255), index=True)
     title = Column(String(500))
     url = Column(String(500), unique=True, index=True)
-    description = Column(String)
+    description = Column(String(1000))
     published_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
