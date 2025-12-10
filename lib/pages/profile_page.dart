@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:market_pulse/pages/follow_page.dart'; // ★ FollowPage 연결 추가
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -9,24 +10,62 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: const Color(0xFFF7F7FB),
       body: SingleChildScrollView(
         child: Column(
-          children: const [
-            _TopBar(),
-            _Banner(),
-            SizedBox(height: 12),
-            _ProfileCard(),
-            SizedBox(height: 20),
-            _StatsSection(),
-            SizedBox(height: 20),
-            _PostListSection(),
+          children: [
+            const _TopBar(),
+            const _Banner(),
+            const SizedBox(height: 12),
+            const _ProfileCard(),
+            const SizedBox(height: 16),
+
+            // ★ 팔로워/팔로잉 보기 버튼
+            _followButton(context),
+
+            const SizedBox(height: 20),
+            const _StatsSection(),
+            const SizedBox(height: 20),
+            const _PostListSection(),
+            const SizedBox(height: 30),
           ],
+        ),
+      ),
+    );
+  }
+
+  // -----------------------------------------------------
+  // 팔로워 / 팔로잉 보기 버튼
+  // -----------------------------------------------------
+  Widget _followButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FollowPage()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFB46CFF),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        alignment: Alignment.center,
+        child: const Text(
+          "팔로워 / 팔로잉 보기",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 }
 
-/* ---------------------- 상단 뒤로가기 + 제목 + 연필 ---------------------- */
-
+// ----------------------------------------------------------
+// 상단 TopBar
+// ----------------------------------------------------------
 class _TopBar extends StatelessWidget {
   const _TopBar();
 
@@ -38,8 +77,7 @@ class _TopBar extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back_ios,
-                size: 20, color: Colors.black87),
+            child: const Icon(Icons.arrow_back_ios, size: 20),
           ),
           const Spacer(),
           const Text(
@@ -58,8 +96,9 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/* ---------------------- 보라색 배너 ---------------------- */
-
+// ----------------------------------------------------------
+// 보라색 배너
+// ----------------------------------------------------------
 class _Banner extends StatelessWidget {
   const _Banner();
 
@@ -89,8 +128,9 @@ class _Banner extends StatelessWidget {
   }
 }
 
-/* ---------------------- 프로필 카드 ---------------------- */
-
+// ----------------------------------------------------------
+// 프로필 카드
+// ----------------------------------------------------------
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard();
 
@@ -126,10 +166,9 @@ class _ProfileCard extends StatelessWidget {
                 child: const Text(
                   "U",
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(width: 18),
@@ -152,12 +191,17 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
-          const Text("임시 프로필 소개입니다.",
-              style: TextStyle(fontSize: 14)),
+          const Text(
+            "임시 프로필 소개입니다.",
+            style: TextStyle(fontSize: 14),
+          ),
+
           const SizedBox(height: 22),
           const Text("관심 분야", style: TextStyle(fontSize: 15)),
           const SizedBox(height: 10),
+
           Wrap(
             spacing: 10,
             children: const [
@@ -192,8 +236,9 @@ class _Tag extends StatelessWidget {
   }
 }
 
-/* ---------------------- 통계 카드 ---------------------- */
-
+// ----------------------------------------------------------
+// 통계 카드
+// ----------------------------------------------------------
 class _StatsSection extends StatelessWidget {
   const _StatsSection();
 
@@ -260,8 +305,9 @@ class _StatsCard extends StatelessWidget {
   }
 }
 
-/* ---------------------- 게시글 리스트 ---------------------- */
-
+// ----------------------------------------------------------
+// 작성한 글 리스트 섹션
+// ----------------------------------------------------------
 class _PostListSection extends StatelessWidget {
   const _PostListSection();
 
@@ -309,13 +355,14 @@ class _PostItem extends StatelessWidget {
         const SizedBox(height: 6),
         Row(
           children: [
-            const Icon(Icons.chat_bubble_outline,
-                size: 16, color: Colors.grey),
+            const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey),
             const SizedBox(width: 6),
-            Text("$comments",
-                style: const TextStyle(color: Colors.grey)),
+            Text(
+              "$comments",
+              style: const TextStyle(color: Colors.grey),
+            ),
           ],
-        )
+        ),
       ],
     );
   }
