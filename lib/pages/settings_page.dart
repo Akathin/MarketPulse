@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'profile_page.dart';   // ← 프로필 페이지 연결용 import 추가!
 
 class SettingsPage extends StatelessWidget {
-  final bool isSubscribed; /// true = 구독중, false = 무료버전
+  final bool isSubscribed; // true = 구독중, false = 무료버전
   final String username;
 
   const SettingsPage({
@@ -31,17 +32,20 @@ class SettingsPage extends StatelessWidget {
                 subtitle: "관심 태그 알림 관리",
                 onTap: () {},
               ),
+
+              // ⭐ 회원 정보 수정 → ProfilePage 이동
               _settingCard(
                 icon: Icons.person,
                 title: "회원 정보 수정",
                 subtitle: "프로필 수정 관리",
                 onTap: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
-                  // );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  );
                 },
               ),
+
               _settingCard(
                 icon: Icons.color_lens,
                 title: "앱 화면 설정",
@@ -188,7 +192,8 @@ class SettingsPage extends StatelessWidget {
                               fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text(subtitle,
-                          style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          style: TextStyle(
+                              fontSize: 13, color: Colors.grey[600])),
                     ],
                   ),
                 ),
