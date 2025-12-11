@@ -1,4 +1,5 @@
 import os
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from dateutil import parser
 from fastapi import FastAPI
@@ -54,6 +55,14 @@ Base.metadata.create_all(bind=engine)
 # ----------------------
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],     # 모든 origin 허용
+    allow_credentials=True,
+    allow_methods=["*"],     # GET, POST 등 모든 메서드 허용
+    allow_headers=["*"],     # 모든 헤더 허용
+)
+
 load_dotenv()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -61,7 +70,7 @@ if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 
 # 해외 기업 리스트 (폴백)
-COMPANIES = ["Apple", "Tesla", "Amazon", "Google", "Microsoft", "NVIDIA", "Meta"]
+COMPANIES = ["Apple", "Tesla"] #, "Amazon", "Google", "Microsoft", "NVIDIA", "Meta"
 
 
 class SubscriptionRequest(BaseModel):
@@ -79,72 +88,46 @@ def extract_full_text(url: str) -> str:
         return None
 
 
+from openai import OpenAI
+client = OpenAI(api_key=OPENAI_API_KEY)
+
 def summarize_article(text: str) -> str:
-    """Summarize English article text into detailed Korean summary using OpenAI.
-    Returns None if no API key or if summarization fails.
+    if not text or not OPENAI_API_KEY:
+        return None
+
+    # 본문을 너무 길게 넣지 않도록 제한
+    text = text[:8000]   # 너무 긴 전문은 잘라서 보내기
+
+    system_msg = """
+    당신은 영어 뉴스를 한국어로 '짧고 핵심만' 요약하는 전문가입니다.
+    절대 본문을 번역하거나 길게 작성하지 마세요.
+    3~5문장으로 간결하게 작성하세요.
     """
-    if not text:
-        return None
-    if not OPENAI_API_KEY:
-        return None
 
-    # simple chunking by characters; tune chunk_size for your model/token limits
-    chunk_size = 3000
-    parts = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
-    summaries = []
-    system_prompt = "당신은 영어 뉴스 기사를 한국어로 요약하는 전문가입니다. 자세하게 핵심만 요약하세요."
+    user_msg = f"""
+    아래 영어 기사 내용을 한국어로 3~5문장만 사용하여 '매우 간략하게' 요약하세요.
+    본문 전체를 번역하지 말고 핵심 결론만 요약하세요.
+    마지막에 bullet 형식으로 핵심포인트 3개만 적어주세요.
 
-    for part in parts:
-        user_prompt = (
-            "다음 영어 본문을 읽고 한국어로 자세히 요약하세요. 핵심 포인트를 마지막에 3개로 정리하세요.\n\n" + part
+    기사 내용:
+    {text}
+    """
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.2,
+            max_tokens=350,  # 요약 분량 강하게 제한
         )
-        for attempt in range(3):
-            try:
-                resp = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    max_tokens=800,
-                    temperature=0.2,
-                )
-                chunk_summary = resp["choices"][0]["message"]["content"].strip()
-                summaries.append(chunk_summary)
-                break
-            except Exception:
-                time.sleep(2 ** attempt)
-                continue
+        return resp.choices[0].message.content.strip()
 
-    if not summaries:
+    except Exception as e:
+        print("요약 오류:", e)
         return None
-
-    if len(summaries) == 1:
-        return summaries[0]
-
-    combined = "\n\n".join(summaries)
-    synth_prompt = (
-        "여러 개의 부분 요약을 하나의 일관된 한국어 요약으로 합치고, 불필요한 중복을 제거하세요. 마지막에 핵심 키포인트 3개를 번호로 정리하세요.\n\n" + combined
-    )
-
-    for attempt in range(3):
-        try:
-            resp = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": synth_prompt},
-                ],
-                max_tokens=1000,
-                temperature=0.2,
-            )
-            final_summary = resp["choices"][0]["message"]["content"].strip()
-            return final_summary
-        except Exception:
-            time.sleep(2 ** attempt)
-            continue
-
-    return "\n\n".join(summaries)
 
 # ----------------------
 # 뉴스 크롤링 함수 (NewsAPI)
@@ -171,18 +154,22 @@ def fetch_news(company):
         # 기사 전문 추출
         full_text = extract_full_text(item["url"])
 
-        # 감정 분석
+        # 감정 분석 (본문 없으면 중립)
         sentiment_result = analyze_sentiment(full_text) if full_text else "neutral"
 
         # publishedAt 파싱
         published_at = parser.isoparse(item["publishedAt"]).replace(tzinfo=None)
 
-        # 한국어 요약 (OpenAI 기반) - 환경변수 없으면 건너뜀
+        # 요약에 사용할 텍스트 (본문 없으면 description 사용)
+        summary_source = full_text if full_text else item["description"]
+
+        # 한국어 요약 (본문 또는 description 기반)
         summary_ko = None
-        try:
-            summary_ko = summarize_article(full_text) if full_text else None
-        except Exception:
-            summary_ko = None
+        if summary_source:
+            try:
+                summary_ko = summarize_article(summary_source)
+            except Exception:
+                summary_ko = None
 
         news = News(
             company=company,
@@ -190,7 +177,7 @@ def fetch_news(company):
             url=item["url"],
             description=item["description"],
             content=full_text,
-            sentiment=sentiment_result,   # 추가
+            sentiment=sentiment_result,
             published_at=published_at,
             summary_ko=summary_ko,
         )
@@ -199,6 +186,7 @@ def fetch_news(company):
     db.commit()
     db.close()
     print(f"[{datetime.datetime.now()}] {company} 뉴스 갱신 완료")
+
 
 # ----------------------
 # 스케줄러 (15분마다 모든 기업 뉴스 갱신)
@@ -251,10 +239,13 @@ def get_news(company: str = None):
             "title": n.title,
             "url": n.url,
             "description": n.description,
+            "summary_ko": n.summary_ko,
+            "sentiment": n.sentiment,
             "publishedAt": _format(n.published_at),
         }
         for n in news_list
     ]
+
 
 
 @app.post("/subscribe")

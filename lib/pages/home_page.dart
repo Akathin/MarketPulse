@@ -5,6 +5,8 @@ import 'notification_page.dart';
 import 'community_page.dart';
 import 'calendar_page.dart';
 import 'settings_page.dart';
+import '../models/news.dart';
+import '../services/news_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +22,7 @@ class _HomePageState extends State<HomePage> {
     _NewsListPage(),
     const CommunityPage(),
     const CalendarPage(),
-    const SettingsPage(isSubscribed: false, username: 'username')
+    const SettingsPage(isSubscribed: false, username: 'username'),
   ];
 
   @override
@@ -32,136 +34,192 @@ class _HomePageState extends State<HomePage> {
         elevation: 0,
         title: _buildLogo(),
         actions: [
-          Row(
-            children: [
-              // 알림
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationPage()),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Icon(Icons.notifications_none, color: Colors.grey[800]),
-                    const SizedBox(width: 4),
-                    const Text("알림",
-                        style: TextStyle(fontSize: 14, color: Colors.black87)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // 로그아웃
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                  );
-                },
-                child: const Text("로그아웃",
-                    style: TextStyle(fontSize: 14, color: Colors.black87)),
-              ),
-              const SizedBox(width: 12),
-            ],
-          )
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationPage()),
+              );
+            },
+            icon: Icon(Icons.notifications_none, color: Colors.grey[800]),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            },
+            child: const Text(
+              "로그아웃",
+              style: TextStyle(color: Colors.black87),
+            ),
+          ),
         ],
       ),
 
-      /// 선택된 페이지 표시
-    body: IndexedStack(
+      body: IndexedStack(
         index: _selectedIndex,
         children: _pages,
       ),
-      /// 하단 네비게이션 동작 구현
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: AppStyles.primary,
         unselectedItemColor: Colors.grey,
-
         type: BottomNavigationBarType.fixed,
-
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article_outlined),
-            label: "소식",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_outlined),
-            label: "커뮤니티",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: "캘린더",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: "설정",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: "소식"),
+          BottomNavigationBarItem(icon: Icon(Icons.people_alt_outlined), label: "커뮤니티"),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: "캘린더"),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: "설정"),
         ],
       ),
     );
   }
 
-  /// 로고
   Widget _buildLogo() {
     return Text(
       "Market Pulse",
       style: TextStyle(
-        fontSize: 26,
-        fontWeight: FontWeight.w700,
-        foreground: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2
-          ..color = Colors.blueGrey.shade300,
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.blueGrey.shade700,
       ),
     );
   }
 }
 
-/// 뉴스 목록 페이지 (기존 UI 그대로 유지)
-class _NewsListPage extends StatelessWidget {
+class _NewsListPage extends StatefulWidget {
+  @override
+  State<_NewsListPage> createState() => _NewsListPageState();
+}
+
+class _NewsListPageState extends State<_NewsListPage> {
+  final NewsService newsService = NewsService();
+
+  // 각 뉴스의 펼침 여부 상태 저장
+  final Map<int, bool> expandedMap = {};
+
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Container(
+    return FutureBuilder<List<NewsItem>>(
+      future: newsService.fetchNews(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text("뉴스 로드 실패: ${snapshot.error}"));
+        }
+
+        final newsList = snapshot.data ?? [];
+
+        return ListView.builder(
           padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: const Offset(1, 2),
-              )
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("뉴스 제목 ${index + 1}",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                "여기에 뉴스 요약이 들어갑니다.",
-                style: TextStyle(fontSize: 13, color: Colors.black87),
+          itemCount: newsList.length,
+          itemBuilder: (context, index) {
+            final news = newsList[index];
+
+            final bool isExpanded = expandedMap[index] ?? false;
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(1, 2))
+                ],
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 제목
+                  Text(
+                    news.title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 요약 (펼치기/접기)
+                  Text(
+                    news.summaryKo ?? "",
+                    maxLines: isExpanded ? null : 3,
+                    overflow:
+                        isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // 더보기 / 접기 버튼
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        expandedMap[index] = !isExpanded;
+                      });
+                    },
+                    child: Text(
+                      isExpanded ? "접기 ▲" : "더보기 ▼",
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // 감정 분석 표시
+                  Row(
+                    children: [
+                      Icon(
+                        news.sentiment == "positive"
+                            ? Icons.sentiment_satisfied_alt
+                            : news.sentiment == "negative"
+                                ? Icons.sentiment_dissatisfied
+                                : Icons.sentiment_neutral,
+                        color: news.sentiment == "positive"
+                            ? Colors.green
+                            : news.sentiment == "negative"
+                                ? Colors.red
+                                : Colors.grey,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        news.sentiment.toUpperCase(),
+                        style: TextStyle(
+                          color: news.sentiment == "positive"
+                              ? Colors.green
+                              : news.sentiment == "negative"
+                                  ? Colors.red
+                                  : Colors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+                  Text("출처: ${news.company}",
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            );
+          },
         );
       },
     );
